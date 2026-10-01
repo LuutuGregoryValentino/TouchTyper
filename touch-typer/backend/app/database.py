@@ -23,5 +23,5 @@ class Base(DeclarativeBase):
 
 # Dependency to yield database sessions in FastAPI routes
 async def get_db():
-    async with AsyncSessionLocal() as session:k
+    async with AsyncSessionLocal() as session:
         yield session
