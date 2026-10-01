@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -9,8 +9,15 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(100), unique=True, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
     hashed_password = Column(String(255), nullable=True)
+    bio = Column(String(500), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     # Relationships
     sessions = relationship("TypingSession", back_populates="user", cascade="all, delete-orphan")
