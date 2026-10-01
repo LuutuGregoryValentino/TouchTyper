@@ -1,5 +1,6 @@
 // frontend/src/hooks/useTypingEngine.ts
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { apiRequest } from '../services/api';
 
 export interface BigramSample {
   key_a: string;
@@ -8,10 +9,11 @@ export interface BigramSample {
   is_error: boolean;
 }
 
-export const useTypingEngine = (targetText: string, userId: number = 1) => {
+export const useTypingEngine = (targetText: string, userId?: number) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [errors, setErrors] = useState(0);
+  const [hasError, setHasError] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [completedAt, setCompletedAt] = useState<number | null>(null);
   const [clockNow, setClockNow] = useState(0);
@@ -29,24 +31,20 @@ export const useTypingEngine = (targetText: string, userId: number = 1) => {
 
     const now = performance.now();
 
-    if (!startTime) {
+    if (startTime === null) {
       setStartTime(now);
     }
 
-    if (lastKeyChar.current !== null && lastKeyPressTime.current !== null) {
-      const latency = now - lastKeyPressTime.current;
-      const expectedChar = targetText[currentIndex];
-      const isError = e.key !== expectedChar;
-
-      bigramSamples.current.push({
-        key_a: lastKeyChar.current,
-        key_b: e.key,
-        latency_ms: parseFloat(latency.toFixed(2)),
-        is_error: isError,
-      });
-    }
-
     if (e.key === targetText[currentIndex]) {
+      if (lastKeyChar.current !== null && lastKeyPressTime.current !== null) {
+        bigramSamples.current.push({
+          key_a: lastKeyChar.current,
+          key_b: targetText[currentIndex],
+          latency_ms: parseFloat((now - lastKeyPressTime.current).toFixed(2)),
+          is_error: false,
+        });
+      }
+      setHasError(false);
       lastKeyChar.current = e.key;
       lastKeyPressTime.current = now;
       const nextIndex = currentIndex + 1;
@@ -57,7 +55,16 @@ export const useTypingEngine = (targetText: string, userId: number = 1) => {
         setCompleted(true);
       }
     } else {
+      setHasError(true);
       setErrors((prev) => prev + 1);
+      if (lastKeyChar.current !== null && lastKeyPressTime.current !== null) {
+        bigramSamples.current.push({
+          key_a: lastKeyChar.current,
+          key_b: targetText[currentIndex],
+          latency_ms: parseFloat((now - lastKeyPressTime.current).toFixed(2)),
+          is_error: true,
+        });
+      }
     }
   }, [currentIndex, targetText, completed, startTime]);
 
@@ -74,6 +81,7 @@ export const useTypingEngine = (targetText: string, userId: number = 1) => {
     const netWpm = Math.max(0, rawWpm - (errors / (durationSeconds / 60)));
     const accuracy = Math.max(0, (currentIndex / (currentIndex + errors)) * 100);
 
+    if (userId === undefined) return;
     const payload = {
       user_id: userId,
       net_wpm: parseFloat(netWpm.toFixed(2)),
@@ -85,11 +93,7 @@ export const useTypingEngine = (targetText: string, userId: number = 1) => {
     };
 
     try {
-      await fetch('http://localhost:8000/api/v1/telemetry/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      await apiRequest('/telemetry/submit', { method: 'POST', body: JSON.stringify(payload) });
     } catch (err) {
       console.error('Failed to submit session telemetry:', err);
     }
@@ -121,12 +125,14 @@ export const useTypingEngine = (targetText: string, userId: number = 1) => {
   return {
     currentIndex,
     errors,
+    hasError,
     completed,
     reset: () => {
       setCurrentIndex(0);
       setStartTime(null);
       setClockNow(0);
       setErrors(0);
+      setHasError(false);
       setCompleted(false);
       setCompletedAt(null);
       bigramSamples.current = [];

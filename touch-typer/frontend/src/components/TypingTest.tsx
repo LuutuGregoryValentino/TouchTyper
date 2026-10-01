@@ -5,10 +5,11 @@ const DEFAULT_TEXT = 'the quick brown fox jumps over the lazy dog'
 
 interface TypingTestProps {
   targetText?: string
+  userId?: number
 }
 
-export function TypingTest({ targetText = DEFAULT_TEXT }: TypingTestProps) {
-  const { currentIndex, errors, completed, reset, wpm, accuracy, elapsedSeconds } = useTypingEngine(targetText)
+export function TypingTest({ targetText = DEFAULT_TEXT, userId }: TypingTestProps) {
+  const { currentIndex, errors, hasError, completed, reset, wpm, accuracy, elapsedSeconds } = useTypingEngine(targetText, userId)
   const started = currentIndex > 0 || errors > 0
 
   const characters = useMemo(() => Array.from(targetText), [targetText])
@@ -46,13 +47,13 @@ export function TypingTest({ targetText = DEFAULT_TEXT }: TypingTestProps) {
             {characters.map((character, index) => {
               let state = 'character-remaining'
               if (index < currentIndex) state = 'character-correct'
-              if (index === currentIndex) state = 'character-current'
+              if (index === currentIndex) state = hasError ? 'character-current character-error' : 'character-current'
               return <span className={state} key={`${index}-${character}`}>{character}</span>
             })}
           </div>
           <div className="typing-hint">
             <span className="keyboard-icon" aria-hidden="true">⌨</span>
-            <span>Start typing anywhere to begin</span>
+            <span>{hasError ? 'Not quite — press the highlighted character' : 'Start typing anywhere to begin'}</span>
             <span className="hint-separator">·</span>
             <span>Use both hands, stay relaxed</span>
           </div>
@@ -72,7 +73,7 @@ export function TypingTest({ targetText = DEFAULT_TEXT }: TypingTestProps) {
       )}
 
       <div className="typing-card-footer">
-        <span><span className="footer-dot" /> YOUR PROGRESS IS SAVED LOCALLY</span>
+        <span><span className="footer-dot" /> {userId ? 'SESSION SAVED TO YOUR ACCOUNT' : 'GUEST SESSION NOT SAVED'}</span>
         <button type="button" className="text-button" onClick={handleReset} aria-label="Restart practice">Restart <span aria-hidden="true">↺</span></button>
       </div>
     </section>

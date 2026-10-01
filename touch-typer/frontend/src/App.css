@@ -55,6 +55,10 @@
 .character-remaining { color: #94a3b8; }
 .character-current { color: #1e293b; border-bottom: 2px solid #ea580c; position: relative; }
 .character-current::before { content: ''; position: absolute; top: 4px; left: -2px; height: 1.15em; width: 2px; background: #10b981; animation: caret-blink 1s steps(2, start) infinite; }
+.character-current.character-error { color: #b91c1c; background: #fee2e2; border-bottom-color: #dc2626; animation: error-shake .22s ease-in-out; }
+.character-current.character-error::before { background: #dc2626; }
+@keyframes error-shake { 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+.auth-error { color: #b91c1c; font-size: 10px; }
 @keyframes caret-blink { to { visibility: hidden; } }
 .typing-hint { display: flex; justify-content: center; align-items: center; gap: 9px; color: #94a3b8; font-size: 10px; }
 .keyboard-icon { color: #64748b; font-size: 15px; }
