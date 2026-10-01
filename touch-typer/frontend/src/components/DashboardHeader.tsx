@@ -3,6 +3,8 @@ interface DashboardHeaderProps {
   onViewChange: (view: string) => void
   onOpenMetrics: () => void
   onOpenAuth: (mode: 'login' | 'register') => void
+  username: string | null
+  onLogout: () => void
 }
 
 function AnalyticsIcon() {
@@ -13,7 +15,7 @@ function UserIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c.5-3.5 3.2-5.5 7-5.5s6.5 2 7 5.5" /></svg>
 }
 
-export function DashboardHeader({ activeView, onViewChange, onOpenMetrics, onOpenAuth }: DashboardHeaderProps) {
+export function DashboardHeader({ activeView, onViewChange, onOpenMetrics, onOpenAuth, username, onLogout }: DashboardHeaderProps) {
   return (
     <header className="topbar">
       <a className="brand" href="#practice" onClick={(event) => { event.preventDefault(); onViewChange('practice') }} aria-label="TouchType home">
@@ -28,10 +30,9 @@ export function DashboardHeader({ activeView, onViewChange, onOpenMetrics, onOpe
       </nav>
 
       <div className="header-actions">
-        <span className="offline-indicator"><span /> Demo mode</span>
+        <span className="offline-indicator"><span /> {username ? 'Signed in' : 'Guest mode'}</span>
         <span className="header-action-divider" />
-        <button className="header-text-button" type="button" onClick={() => onOpenAuth('login')}>Log in</button>
-        <button className="button button-header" type="button" onClick={() => onOpenAuth('register')}>Create account</button>
+        {username ? <><span className="header-text-button">{username}</span><button className="header-text-button" type="button" onClick={onLogout}>Log out</button></> : <><button className="header-text-button" type="button" onClick={() => onOpenAuth('login')}>Log in</button><button className="button button-header" type="button" onClick={() => onOpenAuth('register')}>Create account</button></>}
         <button className="icon-button analytics-toggle" type="button" onClick={onOpenMetrics} aria-label="Open profile and analytics" title="Profile & analytics">
           <AnalyticsIcon />
           <span className="icon-notification" />

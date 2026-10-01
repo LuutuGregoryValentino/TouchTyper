@@ -3,12 +3,30 @@ import AuthModal, { type AuthMode } from './components/AuthModal'
 import DashboardHeader from './components/DashboardHeader'
 import MetricsPanel from './components/MetricsPanel'
 import TypingTest from './components/TypingTest'
+import { getCurrentUser, logout, type UserProfile } from './services/auth'
 import './App.css'
 
 function App() {
   const [activeView, setActiveView] = useState('practice')
   const [metricsOpen, setMetricsOpen] = useState(false)
   const [authMode, setAuthMode] = useState<AuthMode | null>(null)
+  const [user, setUser] = useState<UserProfile | null>(null)
+
+  const refreshUser = () => {
+    void getCurrentUser().then(setUser).catch(() => {
+      logout()
+      setUser(null)
+    })
+  }
+
+  useEffect(() => {
+    if (localStorage.getItem('access_token')) refreshUser()
+  }, [])
+
+  const handleLogout = () => {
+    logout()
+    setUser(null)
+  }
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -23,11 +41,11 @@ function App() {
 
   return (
     <div className="app-shell">
-      <DashboardHeader activeView={activeView} onViewChange={setActiveView} onOpenMetrics={() => setMetricsOpen(true)} onOpenAuth={setAuthMode} />
+      <DashboardHeader activeView={activeView} onViewChange={setActiveView} onOpenMetrics={() => setMetricsOpen(true)} onOpenAuth={setAuthMode} username={user?.username ?? null} onLogout={handleLogout} />
       <main className="app-main" id="practice">
         <div className="main-container">
           <div className="breadcrumb"><span>HOME</span><span aria-hidden="true">/</span><strong>{activeView === 'practice' ? 'PRACTICE' : 'THE METHOD'}</strong></div>
-          {activeView === 'practice' ? <TypingTest /> : (
+          {activeView === 'practice' ? <TypingTest userId={user?.id} /> : (
             <section className="guide-card">
               <p className="eyebrow">A BETTER WAY TO PRACTICE</p>
               <h1>Progress, one keystroke at a time.</h1>
@@ -44,8 +62,8 @@ function App() {
         </div>
       </main>
       <footer className="app-footer"><span>© 2026 TOUCHTYPER</span><span>MADE FOR YOUR NEXT KEYSTROKE <b>⌁</b></span><button type="button" onClick={() => setActiveView('guide')}>HOW IT WORKS</button></footer>
-      <MetricsPanel open={metricsOpen} onClose={() => setMetricsOpen(false)} onOpenAuth={() => { setMetricsOpen(false); setAuthMode('register') }} />
-      <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} />
+      <MetricsPanel open={metricsOpen} onClose={() => setMetricsOpen(false)} onOpenAuth={() => { setMetricsOpen(false); setAuthMode('register') }} user={user} />
+      <AuthModal mode={authMode} onClose={() => setAuthMode(null)} onModeChange={setAuthMode} onAuthenticated={refreshUser} />
     </div>
   )
 }
